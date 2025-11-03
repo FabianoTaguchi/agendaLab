@@ -1,0 +1,24 @@
+:root {
+  --brand: #0d6efd;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.navbar-brand {
+  letter-spacing: .2px;
+}
+
+.form-text {
+  color: #6c757d;
+}
+
+.table tbody tr td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.alert.d-none {
+  display: none !important;
+}
