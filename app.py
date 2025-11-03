@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify
-from flask import redirect, url_for, flash
+from flask import Flask, render_template, request
+from flask import redirect, url_for, flash, session
 import os
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -32,6 +32,30 @@ class Usuario(db.Model):
     telefone = db.Column(db.String(20))
     role = db.Column(db.String(20), nullable=False, server_default='usuario')
     criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
+    reservas = db.relationship('Reserva', backref='usuario', lazy=True)
+
+
+class Ambiente(db.Model):
+    __tablename__ = 'ambientes'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), unique=True, nullable=False)
+    capacidade = db.Column(db.Integer, nullable=False)
+    ativo = db.Column(db.Boolean, nullable=False, server_default='1')
+    criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
+    reservas = db.relationship('Reserva', backref='ambiente', lazy=True)
+
+
+class Reserva(db.Model):
+    __tablename__ = 'reservas'
+    id = db.Column(db.Integer, primary_key=True)
+    ambiente_id = db.Column(db.Integer, db.ForeignKey('ambientes.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    data = db.Column(db.Date, nullable=False)
+    inicio = db.Column(db.Time, nullable=False)
+    fim = db.Column(db.Time, nullable=False)
+    turma = db.Column(db.String(60))
+    status = db.Column(db.String(20), nullable=False, server_default='ativa')
+    criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
 
 @app.route('/')
@@ -39,14 +63,17 @@ class Usuario(db.Model):
 def index():
     return render_template('index.html')
 
-
 @app.route('/home')
 def home():
     return render_template('home.html')
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    current_user = None
+    if session.get('usuario_id'):
+        current_user = Usuario.query.get(session['usuario_id'])
+    ambientes = Ambiente.query.order_by(Ambiente.nome.asc()).all()
+    return render_template('dashboard.html', current_user=current_user, ambientes=ambientes)
 
 @app.route('/painel')
 def painel():
@@ -57,21 +84,6 @@ def admin():
     return render_template('admin.html')
 
 
-@app.route('/api/usuarios', methods=['GET'])
-def api_list_usuarios():
-    users = Usuario.query.order_by(Usuario.criado_em.desc()).all()
-    return jsonify([
-        {
-            'id': u.id,
-            'login': u.login,
-            'nome': u.nome,
-            'email': u.email or '',
-            'telefone': u.telefone or '',
-            'role': u.role,
-            'criado_em': u.criado_em.isoformat() if isinstance(u.criado_em, datetime) else str(u.criado_em),
-        }
-        for u in users
-    ])
 
 # Página somente leitura: lista de usuários
 @app.route('/usuarios')
@@ -79,39 +91,8 @@ def usuarios_page():
     users = Usuario.query.order_by(Usuario.criado_em.desc()).all()
     return render_template('usuarios.html', users=users)
 
-@app.route('/api/usuarios', methods=['POST'])
-def api_create_usuario():
-    payload = request.get_json(silent=True) or {}
-    login = (payload.get('login') or '').strip()
-    nome = (payload.get('nome') or '').strip()
-    email = (payload.get('email') or '').strip()
-    telefone = (payload.get('telefone') or '').strip()
-    role = (payload.get('role') or 'usuario').strip() or 'usuario'
 
-    if not login or not nome:
-        return jsonify({'error': 'Campos obrigatórios: login e nome'}), 400
 
-    try:
-        u = Usuario(login=login, nome=nome, email=email or None, telefone=telefone or None, role=role)
-        db.session.add(u)
-        db.session.commit()
-        return jsonify({
-            'id': u.id,
-            'login': u.login,
-            'nome': u.nome,
-            'email': u.email or '',
-            'telefone': u.telefone or '',
-            'role': u.role,
-            'criado_em': u.criado_em.isoformat() if isinstance(u.criado_em, datetime) else str(u.criado_em),
-        }), 201
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'error': 'Login já cadastrado'}), 409
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
-
-# --------- Cadastro via formulário (server-side) ---------
 @app.route('/usuarios/cadastrar', methods=['POST'])
 def form_create_usuario():
     nome = (request.form.get('nome') or '').strip()
@@ -139,12 +120,32 @@ def form_create_usuario():
         flash(f'Erro ao cadastrar: {str(e)}', 'danger')
         return redirect(url_for('index'))
 
+
+@app.route('/login', methods=['POST'])
+def login():
+    login = (request.form.get('login') or '').strip()
+    if not login:
+        flash('Informe o login para entrar', 'warning')
+        return redirect(url_for('index'))
+    user = Usuario.query.filter_by(login=login).first()
+    if not user:
+        flash('Login não encontrado', 'danger')
+        return redirect(url_for('index'))
+    session['usuario_id'] = user.id
+    flash(f'Bem-vindo(a), {user.nome}!', 'success')
+    return redirect(url_for('dashboard'))
+
 if __name__ == '__main__':
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', '5002'))
     try:
         with app.app_context():
             db.create_all()
+            if Ambiente.query.count() == 0:
+                for nome in ['Laboratório I', 'Laboratório II', 'Laboratório Robótica']:
+                    db.session.add(Ambiente(nome=nome, capacidade=30, ativo=True))
+                db.session.commit()
     except Exception:
         pass
     app.run(host=host, port=port, debug=True)
+
