@@ -11,15 +11,7 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/dashboard">Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/painel">Painel Geral</a>
-          </li>
-        </ul>
-        <a class="btn btn-outline-secondary ms-3" href="/home">Voltar</a>
+        
       </div>
     </nav>
 
@@ -60,8 +52,7 @@
                     </div>
                     <div class="mb-3">
                       <label for="login-password" class="form-label">Senha</label>
-                      <input type="password" class="form-control" id="login-password" name="senha">
-                      <div class="form-text">(Opcional nesta versão.)</div>
+                      <input type="password" class="form-control" id="login-password" name="senha" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Entrar</button>
                   </form>
@@ -96,12 +87,7 @@
                       </div>
                       <div class="col-12 col-md-6">
                         <label for="reg-senha" class="form-label">Senha</label>
-                        <input type="password" class="form-control" id="reg-senha" name="senha" minlength="6">
-                        <div class="form-text">Mínimo de 6 caracteres.</div>
-                      </div>
-                      <div class="col-12 col-md-6">
-                        <label for="reg-senha2" class="form-label">Confirmar senha</label>
-                        <input type="password" class="form-control" id="reg-senha2" name="senha2" minlength="6">
+                        <input type="password" class="form-control" id="reg-senha" name="senha" required>
                       </div>
                     </div>
                     <div class="d-grid mt-4">

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nome VARCHAR(120) NOT NULL,
   email VARCHAR(120),
   telefone VARCHAR(20),
+  senha VARCHAR(255),
   role VARCHAR(20) NOT NULL DEFAULT 'usuario',
   criado_em TIMESTAMP NOT NULL DEFAULT NOW()
 );

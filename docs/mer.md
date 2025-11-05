@@ -10,6 +10,7 @@ erDiagram
         string nome
         string email
         string telefone
+        string senha
         string role
         datetime criadoEm
     }
@@ -49,7 +50,8 @@ erDiagram
 ## Entidades e Atributos
 
 - Usuario
-  - idUsuario (PK), login (único), nome, email, telefone, role, criadoEm
+ - Usuario
+  - idUsuario (PK), login (único), nome, email, telefone, senha, role, criadoEm
 - Ambiente
   - idAmbiente (PK), nome (único), capacidade (> 0), ativo, criadoEm
 - Reserva
