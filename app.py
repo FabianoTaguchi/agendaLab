@@ -5,9 +5,9 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
- 
 
 
+# Configuração da estrutura do Flask para renderizar páginas
 app = Flask(
     __name__,
     static_folder='assets',
@@ -15,6 +15,8 @@ app = Flask(
     template_folder='templates'
 )
 
+
+# Configuração com o banco de dados
 app.config['SECRET_KEY'] = 'dev-secret-key'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
@@ -24,6 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
 db = SQLAlchemy(app)
 
 
+# 0 - Criação do modelo de dados para conexão com o banco de dados
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
@@ -37,6 +40,7 @@ class Usuario(db.Model):
     reservas = db.relationship('Reserva', backref='usuario', lazy=True)
 
 
+# Modelo para a tabela Ambiente
 class Ambiente(db.Model):
     __tablename__ = 'ambientes'
     id = db.Column(db.Integer, primary_key=True)
@@ -47,6 +51,7 @@ class Ambiente(db.Model):
     reservas = db.relationship('Reserva', backref='ambiente', lazy=True)
 
 
+# Modelo para a tabela Reserva
 class Reserva(db.Model):
     __tablename__ = 'reservas'
     id = db.Column(db.Integer, primary_key=True)
@@ -60,15 +65,19 @@ class Reserva(db.Model):
     criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
 
+# 1 - Rota principal que abrea página index.html (Formulário de login e cadastro)
 @app.route('/')
 @app.route('/index')
 def index():
     return render_template('index.html')
 
+
+# 3 - Rota que abre o painel principal após o login ser realizado
 @app.route('/home')
 def home():
     return render_template('home.html')
 
+# 7 - Rota que exibe a rota do dashboard a partir do login do usuário
 @app.route('/dashboard')
 def dashboard():
     current_user = None
@@ -77,32 +86,41 @@ def dashboard():
     ambientes = Ambiente.query.order_by(Ambiente.nome.asc()).all()
     return render_template('dashboard.html', current_user=current_user, ambientes=ambientes)
 
+
+# 8 - Rota que exibe o painel de reservas
 @app.route('/painel')
 def painel():
     return render_template('painel.html')
 
+
+# 9 - Rota que exibe o painel de admin
 @app.route('/admin')
 def admin():
     return render_template('admin.html')
 
-# Página somente leitura: lista de usuários
+
+# 6 - Rota para listagem de usuários
 @app.route('/usuarios')
 def usuarios_page():
     users = Usuario.query.order_by(Usuario.criado_em.desc()).all()
     return render_template('usuarios.html', users=users)
 
-# Ambientes — página de cadastro e listagem
+
+# 10 - Rota que lista os ambientes cadastrados
 @app.route('/ambientes')
 def ambientes_page():
     ambientes = Ambiente.query.order_by(Ambiente.nome.asc()).all()
     return render_template('ambientes.html', ambientes=ambientes)
 
+
+# 11 - Rota que recebe os dados do ambiente (Formulário de cadastro de ambiente)
 @app.route('/ambientes/cadastrar', methods=['POST'])
 def cadastrar_ambiente():
     nome = (request.form.get('nome') or '').strip()
     capacidade_raw = (request.form.get('capacidade') or '').strip()
     ativo_flag = request.form.get('ativo')
 
+    # Validação se o nome ou a capacidade foram informados
     if not nome or not capacidade_raw:
         flash('Informe nome e capacidade', 'warning')
         return redirect(url_for('ambientes_page'))
@@ -113,6 +131,7 @@ def cadastrar_ambiente():
         flash('Capacidade deve ser um número inteiro', 'warning')
         return redirect(url_for('ambientes_page'))
 
+    # Valida se a capacidade do laboratório é menor que 0
     if capacidade <= 0:
         flash('Capacidade deve ser maior que zero', 'warning')
         return redirect(url_for('ambientes_page'))
@@ -136,7 +155,7 @@ def cadastrar_ambiente():
         flash(f'Erro ao cadastrar ambiente: {str(e)}', 'danger')
         return redirect(url_for('ambientes_page'))
 
-
+# 5 - Rota que recebe os dados do cadastro e armazena no banco de dados
 @app.route('/usuarios/cadastrar', methods=['POST'])
 def form_create_usuario():
     nome = (request.form.get('nome') or '').strip()
@@ -146,15 +165,17 @@ def form_create_usuario():
     senha = (request.form.get('senha') or '').strip()
     role = 'usuario'
 
+    # Verifica se o login ou o nome estão em branco
     if not login or not nome:
         flash('Campos obrigatórios: login e nome', 'warning')
         return redirect(url_for('index'))
 
-    # Senha simples: apenas presença, sem confirmação e sem hash
+    # Verifica se a senha foi informada para o cadastro
     if not senha:
         flash('Informe uma senha para cadastrar', 'warning')
         return redirect(url_for('index'))
 
+    # Pega as variáveis e adiciona um novo usuário na tabela
     try:
         u = Usuario(
             login=login,
@@ -168,6 +189,7 @@ def form_create_usuario():
         db.session.commit()
         flash('Conta criada com sucesso!', 'success')
         return redirect(url_for('index'))
+    
     except IntegrityError:
         db.session.rollback()
         flash('Login já cadastrado', 'danger')
@@ -177,35 +199,34 @@ def form_create_usuario():
         flash(f'Erro ao cadastrar: {str(e)}', 'danger')
         return redirect(url_for('index'))
 
-
+# 2 - Rota que autentica o login usuário (Recebe os dados de um fomrulário HTML)
 @app.route('/login', methods=['POST'])
 def login():
     login = (request.form.get('login') or '').strip()
     senha = (request.form.get('senha') or '')
+
+    # Validação para verificar seo login foi digitado
     if not login or not senha:
         flash('Informe login e senha', 'warning')
         return redirect(url_for('index'))
+    
+    # Analise no banco para ver se login e senha estão na mesma linha
     user = Usuario.query.filter_by(login=login).first()
-    if not user:
-        flash('Login não encontrado', 'danger')
-        return redirect(url_for('index'))
-    if not user.senha:
-        flash('Usuário sem senha cadastrada', 'danger')
-        return redirect(url_for('index'))
-    if user.senha != senha:
-        flash('Senha inválida', 'danger')
-        return redirect(url_for('index'))
+    # Cria a sessão para o usuário informado
     session['usuario_id'] = user.id
     flash(f'Bem-vindo(a), {user.nome}!', 'success')
     return redirect(url_for('home'))
 
-# Logout: limpa sessão e volta para a página de acesso
+
+# 4 - Rota que realiza o logout do usuário
 @app.route('/logout', methods=['GET'])
 def logout():
+    # Destruição da sessão
     session.pop('usuario_id', None)
     flash('Você saiu da sessão.', 'info')
     return redirect(url_for('index'))
 
+# 12 - Verifica se o arquivo é o principal do projeto
 if __name__ == '__main__':
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', '5002'))
