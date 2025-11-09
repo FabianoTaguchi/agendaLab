@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body class="bg-light">
+    <!-- Barra de navegação -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -22,6 +23,7 @@
             <div class="card-body p-4">
               <h1 class="h4 mb-4 text-center">Acesse ou crie sua conta</h1>
 
+              <!-- Abas de autenticação: Entrar e Cadastrar -->
               <ul class="nav nav-pills nav-justified mb-4" id="authTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                   <button class="nav-link active" id="tab-login" data-bs-toggle="tab" data-bs-target="#pane-login" type="button" role="tab" aria-controls="pane-login" aria-selected="true">
@@ -38,13 +40,26 @@
               <div class="tab-content">
                 <!-- Login -->
                 <div class="tab-pane fade show active" id="pane-login" role="tabpanel" aria-labelledby="tab-login" tabindex="0">
+                  <!-- Exibição de mensagens (flash) -->
                   {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                    {% endfor %}
+                    <div class="mb-3">
+                      {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                          {{ message }}
+                          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                      {% endfor %}
+                    </div>
+                    <!-- Acript para refresh em 3 segundos -->
+                    <script>
+                      setTimeout(function(){
+                        window.location.replace(window.location.pathname + window.location.search);
+                      }, 3000);
+                    </script>
                   {% endif %}
                   {% endwith %}
+                  <!-- Formulário de login -->
                   <form id="loginForm" method="post" action="/login" novalidate>
                     <div class="mb-3">
                       <label for="login-username" class="form-label">Login</label>
@@ -60,13 +75,26 @@
 
                 <!-- Cadastro -->
                 <div class="tab-pane fade" id="pane-register" role="tabpanel" aria-labelledby="tab-register" tabindex="0">
+                  <!-- Exibição de mensagens (flash) -->
                   {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                    {% endfor %}
+                    <div class="mb-3">
+                      {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                          {{ message }}
+                          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                      {% endfor %}
+                    </div>
+                    <!-- Acript para refresh em 3 segundos -->
+                    <script>
+                      setTimeout(function(){
+                        window.location.replace(window.location.pathname + window.location.search);
+                      }, 3000);
+                    </script>
                   {% endif %}
                   {% endwith %}
+                  <!-- Formulário de cadastro de usuário -->
                   <form id="registerForm" method="post" action="/usuarios/cadastrar">
                     <div class="row g-3">
                       <div class="col-12">

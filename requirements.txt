@@ -1,4 +1,16 @@
+# Utilize o comando pip install -r requirements para instalar as dependências abaixo:
+
+# Framework para criar e gerenciar aplicações web em Python
 Flask>=2.3,<4
+
+# Extensão do Flask que integra o ORM SQLAlchemy e permite manipular banco de dados
 Flask-SQLAlchemy>=3.1
+
+# ORM que facilita o mapeamento de objetos Python para tabelas de banco de dados
 SQLAlchemy>=2.0
-PyMySQL>=1.1
+
+# Driver que permite conectar o Python a bancos MySQL
+PyMySQL[rsa]>=1.1
+
+# Biblioteca para operações de criptografia, usado para armazenar dados no banco
+cryptography>=41

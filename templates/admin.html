@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -16,9 +17,28 @@
           <button id="btn-logout" class="btn btn-outline-danger btn-sm">Sair</button>
         </div>
       </div>
-    </nav>
+  </nav>
 
     <main id="admin-page" class="container py-4">
+      <!-- Mensagens (flash) -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+        <!-- Acript para refresh em 3 segundos -->
+        <script>
+          setTimeout(function(){
+            window.location.replace(window.location.pathname + window.location.search);
+          }, 3000);
+        </script>
+      {% endif %}
+      {% endwith %}
       <div class="row g-4">
         <div class="col-12 col-lg-4">
           <div class="card shadow-sm h-100">

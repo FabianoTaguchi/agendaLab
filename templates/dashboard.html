@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -24,13 +25,26 @@
           <div class="card shadow-sm h-100">
             <div class="card-body">
               <h2 class="h5 mb-3">Nova reserva</h2>
+              <!-- Mensagens (flash) -->
               {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                {% endfor %}
+                <div class="mb-3">
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                  {% endfor %}
+                </div>
+                <!-- Acript para refresh em 3 segundos -->
+                <script>
+                  setTimeout(function(){
+                    window.location.replace(window.location.pathname + window.location.search);
+                  }, 3000);
+                </script>
               {% endif %}
               {% endwith %}
+              <!-- Formulário de criação de reserva -->
               <form id="reservaForm" method="post" action="/reservas/cadastrar" novalidate>
                 <div class="mb-3">
                   <label for="res-lab" class="form-label">Laboratório</label>
@@ -73,6 +87,7 @@
                 <h2 class="h5 mb-0">Reservas realizadas</h2>
                 <div class="text-muted small" id="reservas-count"></div>
               </div>
+              <!-- Tabela com as reservas do usuário -->
               <div class="table-responsive">
                 <table class="table table-hover align-middle">
                   <thead>
@@ -81,11 +96,25 @@
                       <th>Início</th>
                       <th>Término</th>
                       <th>Turma</th>
-                      <th class="text-end">Ações</th>
+                      <th>Laboratório</th>
                     </tr>
                   </thead>
-                  <tbody id="reservasTableBody">
-                    <!-- preenchido via JS -->
+                  <tbody>
+                    {% if reservas and reservas|length > 0 %}
+                      {% for r in reservas %}
+                        <tr>
+                          <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}</td>
+                          <td>{{ r.inicio.strftime('%H:%M') if r.inicio else '-' }}</td>
+                          <td>{{ r.fim.strftime('%H:%M') if r.fim else '-' }}</td>
+                          <td>{{ r.turma or '-' }}</td>
+                          <td>{{ r.ambiente.nome if r.ambiente else '-' }}</td>
+                        </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-4">Nenhuma reserva encontrada.</td>
+                      </tr>
+                    {% endif %}
                   </tbody>
                 </table>
               </div>
@@ -94,6 +123,7 @@
         </div>
       </div>
     </main>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 

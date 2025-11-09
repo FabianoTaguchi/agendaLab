@@ -1,24 +1,47 @@
+/*
+  Variáveis globais da marca e tema
+  - --brand: cor primária alinhada ao Bootstrap (azul)
+*/
 :root {
   --brand: #0d6efd;
 }
 
+/*
+  Layout base
+  - Garante que o body ocupe a altura total da viewport
+*/
 body {
   min-height: 100vh;
 }
 
+/*
+  Detalhe visual da marca no navbar
+  - Pequeno espaçamento entre letras para aparência mais sóbria
+*/
 .navbar-brand {
   letter-spacing: .2px;
 }
 
+/*
+  Texto auxiliar em formulários
+  - Usa o tom "muted" do Bootstrap para consistência visual
+*/
 .form-text {
   color: #6c757d;
 }
 
+/*
+  Coluna de ações (última coluna) em tabelas
+  - Mantém largura mínima e impede quebra de linha dos botões
+*/
 .table tbody tr td:last-child {
   width: 1%;
   white-space: nowrap;
 }
 
+/*
+  Utilitário para esconder alertas quando necessário (frontend-only)
+*/
 .alert.d-none {
   display: none !important;
 }

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -15,24 +16,45 @@
           <a class="btn btn-outline-secondary" href="/home">Voltar</a>
         </div>
       </div>
-    </nav>
+  </nav>
 
     <main class="container py-4">
+      <!-- Mensagens (flash) -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+        <!-- Acript para refresh em 3 segundos -->
+        <script>
+          setTimeout(function(){
+            window.location.replace(window.location.pathname + window.location.search);
+          }, 3000);
+        </script>
+      {% endif %}
+      {% endwith %}
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <h1 class="h5 mb-0">Todas as reservas</h1>
+            <!-- Filtro por laboratório -->
             <div class="d-flex align-items-center gap-2">
               <label for="painel-lab-filter" class="form-label mb-0 small text-muted">Laboratório:</label>
-              <select id="painel-lab-filter" class="form-select form-select-sm" style="min-width: 220px;">
-                <option value="">Todos</option>
-                <option value="Laboratório I">Laboratório I</option>
-                <option value="Laboratório II">Laboratório II</option>
-                <option value="Laboratório Robótica">Laboratório Robótica</option>
+              <select id="painel-lab-filter" class="form-select form-select-sm" style="min-width: 220px;" onchange="applyLabFilter(this.value)">
+                <option value="" {% if not selected_lab %}selected{% endif %}>Todos</option>
+                {% for a in ambientes %}
+                  <option value="{{ a.nome }}" {% if selected_lab == a.nome %}selected{% endif %}>{{ a.nome }}</option>
+                {% endfor %}
               </select>
-              <div class="text-muted small" id="painel-count">Total: -</div>
+              <div class="text-muted small" id="painel-count">Total: {{ reservas|length }}</div>
             </div>
           </div>
+          <!-- Tabela renderizada -->
           <div class="table-responsive">
             <table class="table table-hover align-middle">
               <thead>
@@ -46,9 +68,22 @@
                 </tr>
               </thead>
               <tbody id="painelTableBody">
-                <tr>
-                  <td colspan="6" class="text-center text-muted">Sem dados — exibição somente HTML.</td>
-                </tr>
+                {% if reservas and reservas|length > 0 %}
+                  {% for r in reservas %}
+                    <tr>
+                      <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}</td>
+                      <td>{{ r.inicio.strftime('%H:%M') if r.inicio else '-' }}</td>
+                      <td>{{ r.fim.strftime('%H:%M') if r.fim else '-' }}</td>
+                      <td>{{ r.turma or '-' }}</td>
+                      <td>{{ r.ambiente.nome if r.ambiente else '-' }}</td>
+                      <td>{{ r.usuario.nome if r.usuario else '-' }}</td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Nenhuma reserva encontrada.</td>
+                  </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -57,6 +92,18 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+      // Função de filtro por laboratório -->
+      function applyLabFilter(val) {
+        const url = new URL(window.location.href);
+        if (val) {
+          url.searchParams.set('lab', val);
+        } else {
+          url.searchParams.delete('lab');
+        }
+        window.location.href = url.toString();
+      }
+    </script>
 
   </body>
   </html>

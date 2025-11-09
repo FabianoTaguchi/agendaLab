@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -17,10 +18,30 @@
           <a id="btn-logout" href="/logout" class="btn btn-outline-danger btn-sm">Sair</a>
         </div>
       </div>
-    </nav>
+  </nav>
 
     <main id="home-page" class="container py-5">
+      <!-- Mensagens (flash) -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+        <!-- Acript para refresh em 3 segundos -->
+        <script>
+          setTimeout(function(){
+            window.location.replace(window.location.pathname + window.location.search);
+          }, 3000);
+        </script>
+      {% endif %}
+      {% endwith %}
       <div class="row justify-content-center g-4">
+        <!-- Card de acesso ao formulário de reservas -->
         <div class="col-12 col-md-5">
           <div class="card shadow-sm h-200">
             <div class="card-body text-center p-4">
@@ -30,6 +51,7 @@
             </div>
           </div>
         </div>
+        <!-- Card para visualizar todas as reservas no painel -->
         <div class="col-12 col-md-5">
           <div class="card shadow-sm h-200">
             <div class="card-body text-center p-4">

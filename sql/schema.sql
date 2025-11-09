@@ -1,53 +1,68 @@
--- AgendaLab — Esquema de Banco (PostgreSQL)
+-- AgendaLab — Esquema de Banco (MySQL 8)
 -- Tabelas: usuarios, ambientes, reservas
 -- Observações:
---  - Unicidades em login (usuarios) e nome (ambientes)
---  - CHECK de ordem de horário (inicio < fim)
+--  - Unicidade em login (usuarios) e nome (ambientes)
 --  - Índices para suportar consultas e validação de conflitos no backend
+
+-- Criação do banco e uso
+CREATE DATABASE IF NOT EXISTS agendalab CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE agendalab;
 
 -- Usuários
 CREATE TABLE IF NOT EXISTS usuarios (
-  id SERIAL PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   login VARCHAR(50) NOT NULL UNIQUE,
   nome VARCHAR(120) NOT NULL,
   email VARCHAR(120),
   telefone VARCHAR(20),
   senha VARCHAR(255),
   role VARCHAR(20) NOT NULL DEFAULT 'usuario',
-  criado_em TIMESTAMP NOT NULL DEFAULT NOW()
-);
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
 -- Ambientes
 CREATE TABLE IF NOT EXISTS ambientes (
-  id SERIAL PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(120) NOT NULL UNIQUE,
-  capacidade INTEGER NOT NULL CHECK (capacidade > 0),
-  ativo BOOLEAN NOT NULL DEFAULT TRUE,
-  criado_em TIMESTAMP NOT NULL DEFAULT NOW()
-);
+  capacidade INT NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
 -- Reservas
 CREATE TABLE IF NOT EXISTS reservas (
-  id SERIAL PRIMARY KEY,
-  ambiente_id INTEGER NOT NULL REFERENCES ambientes(id) ON DELETE RESTRICT,
-  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ambiente_id INT NOT NULL,
+  usuario_id INT NOT NULL,
   data DATE NOT NULL,
   inicio TIME NOT NULL,
   fim TIME NOT NULL,
   turma VARCHAR(60),
   status VARCHAR(20) NOT NULL DEFAULT 'ativa',
-  criado_em TIMESTAMP NOT NULL DEFAULT NOW(),
-  CHECK (inicio < fim)
-);
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_reserva_ambiente FOREIGN KEY (ambiente_id) REFERENCES ambientes(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_reserva_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
 -- Índices
-CREATE INDEX IF NOT EXISTS idx_reservas_amb_data_horario
-  ON reservas (ambiente_id, data, inicio, fim);
-
-CREATE INDEX IF NOT EXISTS idx_reservas_usuario_data
-  ON reservas (usuario_id, data);
+ALTER TABLE reservas ADD INDEX idx_reservas_amb_data_horario (ambiente_id, data, inicio, fim);
+ALTER TABLE reservas ADD INDEX idx_reservas_usuario_data (usuario_id, data);
 
 -- Unicidade para evitar duplicatas exatas de reserva no mesmo intervalo
 -- (não cobre sobreposição de intervalos; a lógica deve validar no backend)
-CREATE UNIQUE INDEX IF NOT EXISTS uq_reserva_intervalo_exato
-  ON reservas (ambiente_id, data, inicio, fim);
+ALTER TABLE reservas ADD UNIQUE KEY uq_reserva_intervalo_exato (ambiente_id, data, inicio, fim);
+
+-- Dados iniciais (idempotentes via ON DUPLICATE KEY)
+INSERT INTO usuarios (login, nome, email, telefone, senha, role)
+VALUES ('adm', 'Administrador', NULL, NULL, 'adm', 'administrador')
+ON DUPLICATE KEY UPDATE login = login;
+
+INSERT INTO ambientes (nome, capacidade, ativo)
+VALUES ('Laboratório I', 20, 1), ('Laboratório II', 20, 1), ('Laboratório Robótica', 15, 1)
+ON DUPLICATE KEY UPDATE nome = nome;
+
+-- Opcional: criar usuário MySQL para a aplicação
+-- (Requer MySQL 8 e "PyMySQL[rsa]" instalado se usar caching_sha2_password)
+-- CREATE USER 'agendalab'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'agendalab';
+-- GRANT ALL PRIVILEGES ON agendalab.* TO 'agendalab'@'localhost';
+-- FLUSH PRIVILEGES;

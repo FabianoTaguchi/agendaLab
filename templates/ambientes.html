@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
@@ -23,13 +24,26 @@
           <div class="card shadow-sm h-100">
             <div class="card-body">
               <h2 class="h5 mb-3">Cadastrar ambiente</h2>
+              <!-- Mensagens (flash) -->
               {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                {% endfor %}
+                <div class="mb-3">
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                  {% endfor %}
+                </div>
+                <!-- Acript para refresh em 3 segundos -->
+                <script>
+                  setTimeout(function(){
+                    window.location.replace(window.location.pathname + window.location.search);
+                  }, 3000);
+                </script>
               {% endif %}
               {% endwith %}
+              <!-- Formulário de cadastro de ambiente -->
               <form id="ambienteForm" method="post" action="/ambientes/cadastrar" novalidate>
                 <div class="mb-3">
                   <label for="amb-nome" class="form-label">Nome do ambiente</label>
@@ -57,6 +71,7 @@
                 <h2 class="h5 mb-0">Ambientes cadastrados</h2>
                 <div class="text-muted small">Total: {{ ambientes|length }}</div>
               </div>
+              <!-- Tabela de ambientes -->
               <div class="table-responsive">
                 <table class="table table-hover align-middle">
                   <thead>
