@@ -38,7 +38,8 @@ def admin_required(f):
             flash('Faça login para continuar.', 'warning')
             return redirect(url_for('index'))
         user = Usuario.query.get(uid)
-        if not user or user.login != 'adm':
+        # Exige que o usuário seja 'adm' e que a senha cadastrada também seja 'adm'
+        if not user or user.login != 'adm' or user.senha != 'adm':
             flash('Acesso restrito ao administrador.', 'danger')
             return redirect(url_for('home'))
         return f(*args, **kwargs)
@@ -98,35 +99,35 @@ def dashboard():
     user_reservas = []
     if session.get('usuario_id'):
         current_user = Usuario.query.get(session['usuario_id'])
+        # Select que exibe as reservas já realizadas pelo usuário na página dashboard.html
         if current_user:
             user_reservas = (
                 Reserva.query
                 .filter(Reserva.usuario_id == current_user.id)
                 .order_by(Reserva.data.desc(), Reserva.inicio.desc())
                 .all())
+    # Select feito na tabela ambientes para ser exibido no formulário que existe na página dashboard.html
     ambientes = Ambiente.query.order_by(Ambiente.nome.asc()).all()
     return render_template('dashboard.html', current_user=current_user, ambientes=ambientes, reservas=user_reservas)
 
 # Rota que exibe o painel de reservas
 @app.route('/painel')
 def painel():
+    # Select dos ambientes cadastrados para ser exibidos no filto
     ambientes = Ambiente.query.order_by(Ambiente.nome.asc()).all()
     selected_lab = (request.args.get('lab') or '').strip()
     query = Reserva.query
+    # Select a dos dados para serem exibidos a partir do que foi selecionado no campo Select
     if selected_lab:
         query = query.filter(Reserva.ambiente.has(Ambiente.nome == selected_lab))
     reservas = query.order_by(Reserva.data.desc(), Reserva.inicio.desc()).all()
     return render_template('painel.html', ambientes=ambientes, reservas=reservas, selected_lab=selected_lab)
 
-# Rota que exibe o painel de admin
-@app.route('/admin')
-def admin():
-    return render_template('admin.html')
-
 # Rota para listagem de usuários a partir da função admin_required
 @app.route('/usuarios')
 @admin_required
 def usuarios_page():
+    # Select para selecionar os usuários cadastrados para serem exibidos na página usuarios.html
     users = Usuario.query.order_by(Usuario.criado_em.desc()).all()
     return render_template('usuarios.html', users=users)
 
@@ -141,16 +142,16 @@ def ambientes_page():
 @app.route('/ambientes/cadastrar', methods=['POST'])
 def cadastrar_ambiente():
     nome = (request.form.get('nome') or '').strip()
-    capacidade_raw = (request.form.get('capacidade') or '').strip()
-    ativo_flag = request.form.get('ativo')
+    capacidade = (request.form.get('capacidade') or '').strip()
+    ativo = request.form.get('ativo')
 
     # Validação se o nome ou a capacidade foram informados
-    if not nome or not capacidade_raw:
+    if not nome or not capacidade:
         flash('Informe nome e capacidade', 'warning')
         return redirect(url_for('ambientes_page'))
 
     try:
-        capacidade = int(capacidade_raw)
+        capacidade = int(capacidade)
     except ValueError:
         flash('Capacidade deve ser um número inteiro', 'warning')
         return redirect(url_for('ambientes_page'))
@@ -164,7 +165,7 @@ def cadastrar_ambiente():
         a = Ambiente(
             nome=nome,
             capacidade=capacidade,
-            ativo=bool(ativo_flag))
+            ativo=bool(ativo))
         db.session.add(a)
         db.session.commit()
         flash('Ambiente cadastrado com sucesso!', 'success')
@@ -302,9 +303,12 @@ def login():
         flash('Informe login e senha', 'warning')
         return redirect(url_for('index'))
     
-    # Analise no banco para ver se login e senha estão na mesma linha
+    # Busca usuário e valida senha informada contra a cadastrada
     user = Usuario.query.filter_by(login=login).first()
-    # Cria a sessão para o usuário informado
+    if not user or user.senha != senha:
+        flash('Login ou senha inválidos', 'danger')
+        return redirect(url_for('index'))
+    # Cria a sessão para o usuário informado após validação
     session['usuario_id'] = user.id
     flash(f'Bem-vindo(a), {user.nome}!', 'success')
     return redirect(url_for('home'))

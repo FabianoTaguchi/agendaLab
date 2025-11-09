@@ -25,6 +25,7 @@
           <div class="card shadow-sm h-100">
             <div class="card-body">
               <h2 class="h5 mb-3">Nova reserva</h2>
+
               <!-- Mensagens (flash) -->
               {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -36,7 +37,7 @@
                     </div>
                   {% endfor %}
                 </div>
-                <!-- Acript para refresh em 3 segundos -->
+                <!-- Script para refresh em 3 segundos -->
                 <script>
                   setTimeout(function(){
                     window.location.replace(window.location.pathname + window.location.search);
@@ -44,10 +45,12 @@
                 </script>
               {% endif %}
               {% endwith %}
+
               <!-- Formulário de criação de reserva -->
               <form id="reservaForm" method="post" action="/reservas/cadastrar" novalidate>
                 <div class="mb-3">
                   <label for="res-lab" class="form-label">Laboratório</label>
+                  <!-- Exibe os ambientes cadastrados a partir da tabela Ambientes -->
                   <select id="res-lab" name="laboratorio" class="form-select" required>
                     {% for a in ambientes %}
                       <option value="{{ a.nome }}">{{ a.nome }}</option>

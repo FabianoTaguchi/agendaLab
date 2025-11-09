@@ -51,7 +51,7 @@
                         </div>
                       {% endfor %}
                     </div>
-                    <!-- Acript para refresh em 3 segundos -->
+                    <!-- Script para refresh em 3 segundos -->
                     <script>
                       setTimeout(function(){
                         window.location.replace(window.location.pathname + window.location.search);
@@ -59,6 +59,7 @@
                     </script>
                   {% endif %}
                   {% endwith %}
+
                   <!-- Formulário de login -->
                   <form id="loginForm" method="post" action="/login" novalidate>
                     <div class="mb-3">
@@ -73,8 +74,9 @@
                   </form>
                 </div>
 
-                <!-- Cadastro -->
+                <!-- Formulário de cadastro -->
                 <div class="tab-pane fade" id="pane-register" role="tabpanel" aria-labelledby="tab-register" tabindex="0">
+
                   <!-- Exibição de mensagens (flash) -->
                   {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
@@ -86,7 +88,7 @@
                         </div>
                       {% endfor %}
                     </div>
-                    <!-- Acript para refresh em 3 segundos -->
+                    <!-- Script para refresh em 3 segundos -->
                     <script>
                       setTimeout(function(){
                         window.location.replace(window.location.pathname + window.location.search);
@@ -94,6 +96,7 @@
                     </script>
                   {% endif %}
                   {% endwith %}
+                  
                   <!-- Formulário de cadastro de usuário -->
                   <form id="registerForm" method="post" action="/usuarios/cadastrar">
                     <div class="row g-3">
