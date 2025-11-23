@@ -30,14 +30,21 @@
             </div>
           {% endfor %}
         </div>
-        <!-- Acript para refresh em 3 segundos -->
+        <!-- Tempo das mensagens em 1 segundo -->
         <script>
           setTimeout(function(){
-            window.location.replace(window.location.pathname + window.location.search);
-          }, 3000);
+            document.querySelectorAll('.alert').forEach(function(el){
+              if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(el).close();
+              } else {
+                el.remove();
+              }
+            });
+          }, 1000);
         </script>
       {% endif %}
       {% endwith %}
+      
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between mb-3">
@@ -55,7 +62,9 @@
                   <th scope="col">E-mail</th>
                   <th scope="col">Telefone</th>
                   <th scope="col">Role</th>
+                  <th scope="col">Status</th>
                   <th scope="col">Criado em</th>
+                  <th scope="col" class="text-center">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,12 +77,66 @@
                       <td>{{ u.email or '' }}</td>
                       <td>{{ u.telefone or '' }}</td>
                       <td>{{ u.role }}</td>
+                      <td>{{ 'Ativo' if u.ativo else 'Inativo' }}</td>
                       <td>{{ u.criado_em.strftime('%d/%m/%Y %H:%M') if u.criado_em else '-' }}</td>
+                      <td class="text-center">
+                        {% if u.ativo %}
+                          <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDesativarUsuario{{ u.id }}">Desativar</button>
+                        {% else %}
+                          <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalAtivarUsuario{{ u.id }}">Ativar</button>
+                        {% endif %}
+                      </td>
                     </tr>
+                    {% if u.ativo %}
+                    <!-- Modal de confirmação de desativação -->
+                    <div class="modal fade" id="modalDesativarUsuario{{ u.id }}" tabindex="-1" aria-labelledby="modalDesativarUsuarioLabel{{ u.id }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="modalDesativarUsuarioLabel{{ u.id }}">Confirmar desativação</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            Tem certeza que deseja desativar o usuário "{{ u.nome }}"?
+                            <div class="text-muted small mt-2">Observação: usuários desativados não conseguem fazer login.</div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <form method="post" action="/usuarios/desativar/{{ u.id }}">
+                              <button type="submit" class="btn btn-danger">Desativar</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
+                    {% if not u.ativo %}
+                    <!-- Modal de confirmação de ativação -->
+                    <div class="modal fade" id="modalAtivarUsuario{{ u.id }}" tabindex="-1" aria-labelledby="modalAtivarUsuarioLabel{{ u.id }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="modalAtivarUsuarioLabel{{ u.id }}">Confirmar ativação</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            Tem certeza que deseja reativar o usuário "{{ u.nome }}"?
+                            <div class="text-muted small mt-2">Observação: usuários reativados podem fazer login novamente.</div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <form method="post" action="/usuarios/ativar/{{ u.id }}">
+                              <button type="submit" class="btn btn-success">Ativar</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
                   {% endfor %}
                 {% else %}
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Nenhum usuário cadastrado.</td>
+                    <td colspan="9" class="text-center text-muted py-4">Nenhum usuário cadastrado.</td>
                   </tr>
                 {% endif %}
               </tbody>

@@ -36,11 +36,17 @@
                     </div>
                   {% endfor %}
                 </div>
-                <!-- Script para refresh em 3 segundos -->
+                <!-- Tempo das mensagens em 1 segundo -->
                 <script>
                   setTimeout(function(){
-                    window.location.replace(window.location.pathname + window.location.search);
-                  }, 3000);
+                    document.querySelectorAll('.alert').forEach(function(el){
+                      if (window.bootstrap && window.bootstrap.Alert) {
+                        window.bootstrap.Alert.getOrCreateInstance(el).close();
+                      } else {
+                        el.remove();
+                      }
+                    });
+                  }, 1000);
                 </script>
               {% endif %}
               {% endwith %}
@@ -82,6 +88,7 @@
                       <th>Capacidade</th>
                       <th>Status</th>
                       <th>Criado em</th>
+                      <th class="text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -91,7 +98,65 @@
                         <td>{{ a.capacidade }}</td>
                         <td>{{ 'Ativo' if a.ativo else 'Inativo' }}</td>
                         <td>{{ a.criado_em.strftime('%d/%m/%Y %H:%M') if a.criado_em else '-' }}</td>
+                        <td class="text-center">
+                          <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditAmbiente{{ a.id }}">Editar</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteAmbiente{{ a.id }}" style="margin-left:6px;">Excluir</button>
+                          </div>
+                        </td>
                       </tr>
+                      <!-- Modal de confirmação de exclusão -->
+                      <div class="modal fade" id="modalDeleteAmbiente{{ a.id }}" tabindex="-1" aria-labelledby="modalDeleteAmbienteLabel{{ a.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="modalDeleteAmbienteLabel{{ a.id }}">Confirmar exclusão</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              Tem certeza que deseja excluir o ambiente "{{ a.nome }}"?
+                              <div class="text-muted small mt-2">Observação: se existir reserva vinculada, a exclusão será impedida.</div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <form method="post" action="/ambientes/excluir/{{ a.id }}">
+                                <button type="submit" class="btn btn-danger">Excluir</button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Modal de edição -->
+                      <div class="modal fade" id="modalEditAmbiente{{ a.id }}" tabindex="-1" aria-labelledby="modalEditAmbienteLabel{{ a.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="modalEditAmbienteLabel{{ a.id }}">Editar ambiente</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" action="/ambientes/editar/{{ a.id }}">
+                              <div class="modal-body">
+                                <div class="mb-3">
+                                  <label for="edit-nome-{{ a.id }}" class="form-label">Nome do ambiente</label>
+                                  <input type="text" id="edit-nome-{{ a.id }}" name="nome" class="form-control" value="{{ a.nome }}" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label for="edit-capacidade-{{ a.id }}" class="form-label">Capacidade (nº de alunos)</label>
+                                  <input type="number" id="edit-capacidade-{{ a.id }}" name="capacidade" class="form-control" min="1" step="1" value="{{ a.capacidade }}" required>
+                                </div>
+                                <div class="form-check mb-3">
+                                  <input class="form-check-input" type="checkbox" value="1" id="edit-ativo-{{ a.id }}" name="ativo" {% if a.ativo %}checked{% endif %}>
+                                  <label class="form-check-label" for="edit-ativo-{{ a.id }}">Ativo</label>
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar alterações</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
                     {% endfor %}
                   </tbody>
                 </table>

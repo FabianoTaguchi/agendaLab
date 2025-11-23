@@ -12,9 +12,8 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="/">AgendaLab</a>
-        <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="ms-auto">
           <a class="btn btn-outline-secondary" href="/home">Voltar</a>
-          <span class="text-secondary small">{{ current_user.nome if current_user else 'Não autenticado' }}</span>
         </div>
       </div>
     </nav>
@@ -37,11 +36,17 @@
                     </div>
                   {% endfor %}
                 </div>
-                <!-- Script para refresh em 3 segundos -->
+                <!-- Tempo das mensagens em 1 segundo -->
                 <script>
                   setTimeout(function(){
-                    window.location.replace(window.location.pathname + window.location.search);
-                  }, 3000);
+                    document.querySelectorAll('.alert').forEach(function(el){
+                      if (window.bootstrap && window.bootstrap.Alert) {
+                        window.bootstrap.Alert.getOrCreateInstance(el).close();
+                      } else {
+                        el.remove();
+                      }
+                    });
+                  }, 1000);
                 </script>
               {% endif %}
               {% endwith %}
@@ -100,6 +105,7 @@
                       <th>Término</th>
                       <th>Turma</th>
                       <th>Laboratório</th>
+                      <th class="text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -111,11 +117,43 @@
                           <td>{{ r.fim.strftime('%H:%M') if r.fim else '-' }}</td>
                           <td>{{ r.turma or '-' }}</td>
                           <td>{{ r.ambiente.nome if r.ambiente else '-' }}</td>
+                          <td class="text-center">
+                            <!-- Botão excluir (abre modal) -->
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDel{{ r.id }}">
+                              Excluir
+                            </button>
+
+                            <!-- Modal de confirmação de exclusão -->
+                            <div class="modal fade" id="confirmDel{{ r.id }}" tabindex="-1" aria-labelledby="confirmDelLabel{{ r.id }}" aria-hidden="true">
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="confirmDelLabel{{ r.id }}">Confirmar exclusão</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Tem certeza que deseja excluir esta reserva?
+                                    <div class="mt-2 small text-muted">
+                                      {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
+                                      {{ r.inicio.strftime('%H:%M') if r.inicio else '-' }}–{{ r.fim.strftime('%H:%M') if r.fim else '-' }}
+                                      — {{ r.ambiente.nome if r.ambiente else '-' }}
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer">
+                                    <form method="post" action="/reservas/excluir/{{ r.id }}">
+                                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                      <button type="submit" class="btn btn-danger">Excluir</button>
+                                    </form>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
                         </tr>
                       {% endfor %}
                     {% else %}
                       <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Nenhuma reserva encontrada.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Nenhuma reserva encontrada.</td>
                       </tr>
                     {% endif %}
                   </tbody>

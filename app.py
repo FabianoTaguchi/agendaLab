@@ -45,6 +45,17 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+# Função que exige usuário logado
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        uid = session.get('usuario_id')
+        if not uid:
+            flash('Faça login para continuar.', 'warning')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return wrapper
+
 
 # Criação dos modelos de dados para conexão com o banco de dados
 # Deve ser observado os campos no MySQL Workbench
@@ -56,6 +67,7 @@ class Usuario(db.Model):
     email = db.Column(db.String(120))
     telefone = db.Column(db.String(20))
     senha = db.Column(db.String(255))
+    ativo = db.Column(db.Boolean, nullable=False, server_default='1')
     role = db.Column(db.String(20), nullable=False, server_default='usuario')
     criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
     reservas = db.relationship('Reserva', backref='usuario', lazy=True)
@@ -90,7 +102,56 @@ def index():
 # Rota que abre o painel principal após o login ser realizado
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    # Decide a versão da home conforme perfil
+    uid = session.get('usuario_id')
+    user = Usuario.query.get(uid) if uid else None
+    is_admin = False
+    if user:
+        # Considera administrador quando role == 'admin' ou login == 'adm'
+        is_admin = (user.role == 'admin') or (user.login == 'adm')
+    template_name = 'home_admin.html' if is_admin else 'home.html'
+    return render_template(template_name, current_user=user)
+
+# Rotas de perfil do usuário (visualização e atualização)
+@app.route('/perfil')
+@login_required
+def perfil():
+    uid = session.get('usuario_id')
+    user = Usuario.query.get(uid)
+    return render_template('perfil.html', current_user=user)
+
+# Rota que recupera os dados do usuário e altera os dados (Update)
+@app.route('/perfil/atualizar', methods=['POST'])
+@login_required
+def atualizar_perfil():
+    uid = session.get('usuario_id')
+    user = Usuario.query.get(uid)
+    if not user:
+        flash('Usuário não encontrado.', 'danger')
+        return redirect(url_for('home'))
+
+    nome = (request.form.get('nome') or '').strip()
+    email = (request.form.get('email') or '').strip()
+    telefone = (request.form.get('telefone') or '').strip()
+    nova_senha = (request.form.get('senha') or '').strip()
+
+    if not nome:
+        flash('Informe o nome.', 'warning')
+        return redirect(url_for('perfil'))
+
+    try:
+        user.nome = nome
+        user.email = email or None
+        user.telefone = telefone or None
+        if nova_senha:
+            user.senha = nova_senha
+        db.session.commit()
+        flash('Perfil atualizado com sucesso!', 'success')
+        return redirect(url_for('perfil'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar perfil: {str(e)}', 'danger')
+        return redirect(url_for('perfil'))
 
 # Rota que exibe a rota do dashboard a partir do login do usuário
 @app.route('/dashboard')
@@ -131,6 +192,49 @@ def usuarios_page():
     users = Usuario.query.order_by(Usuario.criado_em.desc()).all()
     return render_template('usuarios.html', users=users)
 
+# Rota para desativar usuário (admin)
+@app.route('/usuarios/desativar/<int:usuario_id>', methods=['POST'])
+@admin_required
+def desativar_usuario(usuario_id):
+    u = Usuario.query.get(usuario_id)
+    if not u:
+        flash('Usuário não encontrado.', 'danger')
+        return redirect(url_for('usuarios_page'))
+
+    # Impede desativar o próprio usuário logado
+    if session.get('usuario_id') == usuario_id:
+        flash('Não é possível desativar a si mesmo.', 'warning')
+        return redirect(url_for('usuarios_page'))
+
+    try:
+        u.ativo = False
+        db.session.commit()
+        flash('Usuário desativado com sucesso.', 'success')
+        return redirect(url_for('usuarios_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao desativar usuário: {str(e)}', 'danger')
+        return redirect(url_for('usuarios_page'))
+
+# Rota para reativar usuário (admin)
+@app.route('/usuarios/ativar/<int:usuario_id>', methods=['POST'])
+@admin_required
+def ativar_usuario(usuario_id):
+    u = Usuario.query.get(usuario_id)
+    if not u:
+        flash('Usuário não encontrado.', 'danger')
+        return redirect(url_for('usuarios_page'))
+
+    try:
+        u.ativo = True
+        db.session.commit()
+        flash('Usuário reativado com sucesso.', 'success')
+        return redirect(url_for('usuarios_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao reativar usuário: {str(e)}', 'danger')
+        return redirect(url_for('usuarios_page'))
+
 # Rota que lista os ambientes cadastrados a partir da função admim_required
 @app.route('/ambientes')
 @admin_required
@@ -140,6 +244,7 @@ def ambientes_page():
 
 # Rota que recebe os dados do ambiente (Formulário de cadastro de ambiente)
 @app.route('/ambientes/cadastrar', methods=['POST'])
+@admin_required
 def cadastrar_ambiente():
     nome = (request.form.get('nome') or '').strip()
     capacidade = (request.form.get('capacidade') or '').strip()
@@ -177,6 +282,74 @@ def cadastrar_ambiente():
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao cadastrar ambiente: {str(e)}', 'danger')
+        return redirect(url_for('ambientes_page'))
+
+# Rota para editar ambiente (admin)
+@app.route('/ambientes/editar/<int:ambiente_id>', methods=['POST'])
+@admin_required
+def editar_ambiente(ambiente_id):
+    a = Ambiente.query.get(ambiente_id)
+    if not a:
+        flash('Ambiente não encontrado.', 'danger')
+        return redirect(url_for('ambientes_page'))
+
+    nome = (request.form.get('nome') or '').strip()
+    capacidade_str = (request.form.get('capacidade') or '').strip()
+    ativo = request.form.get('ativo')
+
+    if not nome or not capacidade_str:
+        flash('Informe nome e capacidade.', 'warning')
+        return redirect(url_for('ambientes_page'))
+
+    try:
+        capacidade = int(capacidade_str)
+    except ValueError:
+        flash('Capacidade deve ser um número inteiro.', 'warning')
+        return redirect(url_for('ambientes_page'))
+
+    if capacidade <= 0:
+        flash('Capacidade deve ser maior que zero.', 'warning')
+        return redirect(url_for('ambientes_page'))
+
+    try:
+        a.nome = nome
+        a.capacidade = capacidade
+        a.ativo = bool(ativo)
+        db.session.commit()
+        flash('Ambiente atualizado com sucesso!', 'success')
+        return redirect(url_for('ambientes_page'))
+    except IntegrityError:
+        db.session.rollback()
+        flash('Nome de ambiente já cadastrado.', 'danger')
+        return redirect(url_for('ambientes_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar ambiente: {str(e)}', 'danger')
+        return redirect(url_for('ambientes_page'))
+
+# Rota para excluir ambiente (admin)
+@app.route('/ambientes/excluir/<int:ambiente_id>', methods=['POST'])
+@admin_required
+def excluir_ambiente(ambiente_id):
+    a = Ambiente.query.get(ambiente_id)
+    if not a:
+        flash('Ambiente não encontrado.', 'danger')
+        return redirect(url_for('ambientes_page'))
+
+    # Impede exclusão se houver reservas vinculadas
+    reservas_count = Reserva.query.filter_by(ambiente_id=ambiente_id).count()
+    if reservas_count > 0:
+        flash('Não é possível excluir: existem reservas vinculadas.', 'danger')
+        return redirect(url_for('ambientes_page'))
+
+    try:
+        db.session.delete(a)
+        db.session.commit()
+        flash('Ambiente excluído com sucesso!', 'success')
+        return redirect(url_for('ambientes_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir ambiente: {str(e)}', 'danger')
         return redirect(url_for('ambientes_page'))
 
 # Rota que recebe os dados do cadastro e armazena no banco de dados
@@ -230,7 +403,7 @@ def cadastrar_reserva():
     uid = session.get('usuario_id')
     if not uid:
         flash('Faça login para reservar.', 'warning')
-        return redirect(url_for('index'))
+        return redirect(url_for('-'))
 
     laboratorio_nome = (request.form.get('laboratorio') or '').strip()
     data_str = (request.form.get('data') or '').strip()
@@ -292,6 +465,31 @@ def cadastrar_reserva():
         flash(f'Erro ao criar reserva: {str(e)}', 'danger')
         return redirect(url_for('dashboard'))
 
+# Excluir reserva (somente o autor logado)
+@app.route('/reservas/excluir/<int:reserva_id>', methods=['POST'])
+@login_required
+def excluir_reserva(reserva_id):
+    uid = session.get('usuario_id')
+    r = Reserva.query.get(reserva_id)
+    if not r:
+        flash('Reserva não encontrada.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Verifica propriedade: somente o criador pode excluir
+    if r.usuario_id != uid:
+        flash('Você só pode excluir suas próprias reservas.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        db.session.delete(r)
+        db.session.commit()
+        flash('Reserva excluída com sucesso!', 'success')
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir reserva: {str(e)}', 'danger')
+        return redirect(url_for('dashboard'))
+
 # Rota que autentica o login usuário (Recebe os dados de um fomrulário HTML)
 @app.route('/login', methods=['POST'])
 def login():
@@ -307,6 +505,10 @@ def login():
     user = Usuario.query.filter_by(login=login).first()
     if not user or user.senha != senha:
         flash('Login ou senha inválidos', 'danger')
+        return redirect(url_for('index'))
+    # Impede login se usuário estiver desativado
+    if not user.ativo:
+        flash('Usuário desativado. Contate o administrador.', 'danger')
         return redirect(url_for('index'))
     # Cria a sessão para o usuário informado após validação
     session['usuario_id'] = user.id

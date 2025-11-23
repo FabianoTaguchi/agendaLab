@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home (Administrador)</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+  <!-- Navbar simples -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/home">AgendaLab</a>
+      <div class="d-flex ms-auto align-items-center gap-3">
+        {% if current_user %}
+          <span class="text-secondary small">Olá {{ current_user.nome }}</span>
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="/logout">Sair</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="flash-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+        <!-- Tempo das mensagens em 1 segundo -->
+        <script>
+          setTimeout(function(){
+            document.querySelectorAll('#flash-container .alert').forEach(function(el){
+              if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(el).close();
+              } else {
+                el.remove();
+              }
+            });
+          }, 1000);
+        </script>
+      {% endif %}
+    {% endwith %}
+
+    <h1 class="h4 mb-4">Home do Administrador</h1>
+    <p class="text-muted">Acesse as funções administrativas abaixo:</p>
+
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Cadastrar Ambiente</h5>
+            <p class="card-text">Gerencie os laboratórios disponíveis para reserva.</p>
+            <a href="/ambientes" class="btn btn-primary">Ir para Ambientes</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Usuários</h5>
+            <p class="card-text">Liste e gerencie o status dos usuários.</p>
+            <a href="/usuarios" class="btn btn-primary">Ir para Usuários</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Painel de Reservas</h5>
+            <p class="card-text">Visualize reservas e filtre por laboratório.</p>
+            <a href="/painel" class="btn btn-primary">Ir para Painel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+</body>
+</html>

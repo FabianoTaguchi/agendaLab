@@ -30,11 +30,17 @@
             </div>
           {% endfor %}
         </div>
-        <!-- Script para refresh em 3 segundos -->
+        <!-- Tempo das mensagens em 1 segundo -->
         <script>
           setTimeout(function(){
-            window.location.replace(window.location.pathname + window.location.search);
-          }, 3000);
+            document.querySelectorAll('.alert').forEach(function(el){
+              if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(el).close();
+              } else {
+                el.remove();
+              }
+            });
+          }, 1000);
         </script>
       {% endif %}
       {% endwith %}

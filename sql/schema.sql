@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   email VARCHAR(120),
   telefone VARCHAR(20),
   senha VARCHAR(255),
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
   role VARCHAR(20) NOT NULL DEFAULT 'usuario',
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -41,28 +42,13 @@ CREATE TABLE IF NOT EXISTS reservas (
   status VARCHAR(20) NOT NULL DEFAULT 'ativa',
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_reserva_ambiente FOREIGN KEY (ambiente_id) REFERENCES ambientes(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_reserva_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT fk_reserva_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  KEY idx_reservas_amb_data_horario (ambiente_id, data, inicio, fim),
+  KEY idx_reservas_usuario_data (usuario_id, data),
+  UNIQUE KEY uq_reserva_intervalo_exato (ambiente_id, data, inicio, fim)
 ) ENGINE=InnoDB;
-
--- Índices
-ALTER TABLE reservas ADD INDEX idx_reservas_amb_data_horario (ambiente_id, data, inicio, fim);
-ALTER TABLE reservas ADD INDEX idx_reservas_usuario_data (usuario_id, data);
-
--- Unicidade para evitar duplicatas exatas de reserva no mesmo intervalo
--- (não cobre sobreposição de intervalos; a lógica deve validar no backend)
-ALTER TABLE reservas ADD UNIQUE KEY uq_reserva_intervalo_exato (ambiente_id, data, inicio, fim);
 
 -- Dados iniciais (idempotentes via ON DUPLICATE KEY)
 INSERT INTO usuarios (login, nome, email, telefone, senha, role)
 VALUES ('adm', 'Administrador', NULL, NULL, 'adm', 'administrador')
 ON DUPLICATE KEY UPDATE login = login;
-
-INSERT INTO ambientes (nome, capacidade, ativo)
-VALUES ('Laboratório I', 20, 1), ('Laboratório II', 20, 1), ('Laboratório Robótica', 15, 1)
-ON DUPLICATE KEY UPDATE nome = nome;
-
--- Opcional: criar usuário MySQL para a aplicação
--- (Requer MySQL 8 e "PyMySQL[rsa]" instalado se usar caching_sha2_password)
--- CREATE USER 'agendalab'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'agendalab';
--- GRANT ALL PRIVILEGES ON agendalab.* TO 'agendalab'@'localhost';
--- FLUSH PRIVILEGES;
