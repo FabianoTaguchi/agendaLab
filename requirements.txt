@@ -14,3 +14,6 @@ PyMySQL[rsa]>=1.1
 
 # Biblioteca para operações de criptografia, usado para armazenar dados no banco
 cryptography>=41
+
+# Servidor WSGI para produção (Render)
+gunicorn>=21
