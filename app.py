@@ -20,7 +20,7 @@ app = Flask(
 
 # Configuração para acesso do banco de dados
 # Deve ser alterado login, senha e nome do schema (banco de dados)
-app.config['SECRET_KEY'] = 'dev-secret-key'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL',
@@ -289,10 +289,6 @@ def cadastrar_ambiente():
 @admin_required
 def editar_ambiente(ambiente_id):
     a = Ambiente.query.get(ambiente_id)
-    if not a:
-        flash('Ambiente não encontrado.', 'danger')
-        return redirect(url_for('ambientes_page'))
-
     nome = (request.form.get('nome') or '').strip()
     capacidade_str = (request.form.get('capacidade') or '').strip()
     ativo = request.form.get('ativo')
@@ -345,7 +341,7 @@ def excluir_ambiente(ambiente_id):
     try:
         db.session.delete(a)
         db.session.commit()
-        flash('Ambiente excluído com sucesso!', 'success')
+        flash('Ambiente excluído com sucesso!', 'danger')
         return redirect(url_for('ambientes_page'))
     except Exception as e:
         db.session.rollback()
